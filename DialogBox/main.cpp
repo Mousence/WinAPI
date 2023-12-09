@@ -1,7 +1,7 @@
 #include <Windows.h>
 #include "resource.h"
 
-CONST CHAR* LOGIN_TEXT = "¬ведите логин";
+CONST CHAR* g_sz_LOGIN_INVITE = "¬ведите логин";
 
 BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -24,29 +24,23 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
 		SendMessage(hwnd, WM_SETICON, 0, (LPARAM)hIcon);
 
-		HWND hLogin = GetDlgItem(hwnd, IDC_EDIT_LOGIN);
-		SendMessage(hLogin, WM_SETTEXT, 0, (LPARAM)LOGIN_TEXT);
+		SendMessage(GetDlgItem(hwnd, IDC_EDIT_LOGIN), WM_SETTEXT, 0, (LPARAM)g_sz_LOGIN_INVITE);
 	}
 					  break;
 	case WM_COMMAND:
 		//«десь обрабатываетс€ конамды нажати€ кнопок, сочетани€ клавиш и т.д.
 		switch (LOWORD(wParam))
 		{
-		case IDC_EDIT_LOGIN:
-		{
+		case IDC_EDIT_LOGIN: {
 			HWND hEditLogin = GetDlgItem(hwnd, IDC_EDIT_LOGIN);
 			CHAR sz_buffer[MAX_PATH] = {};
 			SendMessage(hEditLogin, WM_GETTEXT, MAX_PATH, (LPARAM)sz_buffer);
 
-
-			if (HIWORD(wParam) == EN_SETFOCUS) {
-				if (strcmp(sz_buffer, LOGIN_TEXT) == 0)
+			//EN - Edit Notification
+			if (HIWORD(wParam) == EN_SETFOCUS && strcmp(sz_buffer, g_sz_LOGIN_INVITE) == 0)
 				SendMessage(hEditLogin, WM_SETTEXT, 0, (LPARAM)"");
-			}
-			if (HIWORD(wParam) == EN_KILLFOCUS){
-				if(strlen(sz_buffer) == 0)
-					SendMessage(hEditLogin, WM_SETTEXT, 0, (LPARAM)LOGIN_TEXT);
-			}
+			if (HIWORD(wParam) == EN_KILLFOCUS && strlen(sz_buffer) == 0)
+					SendMessage(hEditLogin, WM_SETTEXT, 0, (LPARAM)g_sz_LOGIN_INVITE);
 		}
 		break;
 		case IDOK:
