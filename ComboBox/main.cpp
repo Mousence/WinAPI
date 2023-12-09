@@ -7,7 +7,7 @@
 CONST CHAR* g_sz_VALUES[] = { "This", "is", "my", "first", "Combo", "Box" };
 
 BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK ChildDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+BOOL CALLBACK DlgProcAddItem(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, INT cCmdShow) {
 	DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, (DLGPROC)DlgProc, 0);
@@ -32,10 +32,7 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
 		case IDC_BUTTON_ADD:
-		{
-			HWND hAddDialog = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG2), hwnd, (DLGPROC)ChildDlgProc);
-			ShowWindow(hAddDialog, SW_SHOW);
-		}
+			DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_DIALOG2), hwnd, (DLGPROC)DlgProcAddItem, 0);
 		break;
 		case IDC_BUTTON_DELETE: {
 			HWND hCombo = GetDlgItem(hwnd, IDC_COMBO1);
@@ -46,9 +43,9 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 			if (i != CB_ERR) {
 				SendMessage(hCombo, CB_GETLBTEXT, i, (LPARAM)sz_buffer);
 				sprintf(sz_message, "Вы действительно хотите удалить пункт %i со значением \"%s\"?", i, sz_buffer);
-				int result = MessageBox(hwnd, sz_message, "Info", MB_YESNO | MB_ICONQUESTION);
+				int result = MessageBox(hwnd, sz_message, "Вопрос", MB_YESNO | MB_ICONQUESTION);
 
-				if (result = IDYES) {
+				if (result == IDYES) {
 					SendMessage(hCombo, CB_DELETESTRING, i, 0);
 				}
 			}
@@ -78,7 +75,7 @@ BOOL CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	return FALSE;
 }
 
-BOOL CALLBACK ChildDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
+BOOL CALLBACK DlgProcAddItem(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg) {
 	case WM_INITDIALOG: {
@@ -89,11 +86,13 @@ BOOL CALLBACK ChildDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
 		case IDOK: {
-			HWND hText = GetDlgItem(hwnd, IDC_EDIT1);
-			HWND hCombo = GetDlgItem(hwnd, IDC_COMBO1);
 			CHAR sz_buffer[MAX_PATH] = {};
-			GetWindowText(hText, sz_buffer, MAX_PATH);
-			SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)sz_buffer);
+			HWND hEditAddItem = GetDlgItem(hwnd, IDC_EDIT_NEW_ITEM);
+			SendMessage(hEditAddItem, WM_GETTEXT, MAX_PATH, (LPARAM)sz_buffer);
+		    HWND hParent = GetParent(hwnd);
+			HWND hCombo = GetDlgItem(hParent, IDC_COMBO1);
+			if (SendMessage(hCombo, CB_FINDSTRINGEXACT, -1, (LPARAM)sz_buffer) == CB_ERR)
+				SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)sz_buffer);
 
 			EndDialog(hwnd, 0);
 		}
