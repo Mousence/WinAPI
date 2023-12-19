@@ -6,10 +6,14 @@
 #include "resource.h"
 
 CONST CHAR g_sz_WINDOW_CLASS[] = "My first Window";
+CONST INT g_i_START_X = 10;
+CONST INT g_i_START_Y = 10;
+CONST INT g_I_BUTTON_SIZE = 200;
 
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
+HWND g_hCheckBox;
 TOOLINFO g_toolItem;
 HWND g_hwndTrackingTT;
 BOOL g_trackingMouse = FALSE;
@@ -58,10 +62,10 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, IN
 
 	HWND hwnd = CreateWindowEx
 	(
-		NULL,
+		WS_EX_TOPMOST,
 		g_sz_WINDOW_CLASS,
 		g_sz_WINDOW_CLASS,
-		WS_OVERLAPPEDWINDOW,
+		WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX,
 		windowX, windowY,
 		windowWidth, windowHeight,
 		NULL,
@@ -84,17 +88,33 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
-	case WM_CREATE:
+
+	case WM_CREATE: {
+		g_hCheckBox = CreateWindowEx
+		(
+			NULL, "Button", "Показать координаты мыши",
+			WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+			g_i_START_X * 5, //x
+			g_i_START_Y * 10, //y
+			g_I_BUTTON_SIZE, g_I_BUTTON_SIZE /3,
+			hwnd,
+			(HMENU)(IDC_BUTTON),
+			GetModuleHandle(NULL),
+			NULL
+		);
 		InitCommonControls();
 		g_hwndTrackingTT = CreateTrackingToolTip(IDC_TOOLTIP, hwnd, (LPSTR)"");
 		return TRUE;
+	}
 	case WM_MOUSELEAVE:
-		SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)&g_toolItem);
-		g_trackingMouse = FALSE;
+		if (!g_trackingMouse) {
+			SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)&g_toolItem);
+		}
 		return FALSE;
-	case WM_MOUSEMOVE:
+	case WM_MOUSEMOVE: {
 		static INT oldX, oldY;
 		INT newX, newY;
+
 		if (!g_trackingMouse)
 		{
 			TRACKMOUSEEVENT tme = { sizeof(TRACKMOUSEEVENT) };
@@ -106,13 +126,26 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)&g_toolItem);
 			g_trackingMouse = TRUE;
 		}
+
 		newX = LOWORD(lParam);
 		newY = HIWORD(lParam);
 
 		if (newX != oldX || newY != oldY)
 		{
+			CONST INT SIZE = 256;
+			CHAR sz_title[SIZE]{};
+
+			RECT rect;
+			GetWindowRect(hwnd, &rect);
+
 			oldX = newX;
 			oldY = newY;
+
+			sprintf(sz_title, "%s Position:%ix%i, Size: %ix%i, Mouse Position: %ix%i", g_sz_WINDOW_CLASS,
+				rect.left, rect.top,
+				rect.right - rect.left, rect.bottom - rect.top,
+				oldX, oldY);
+			SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)sz_title);
 
 			CHAR coords[12]{};
 			sprintf(coords, "%ix%i", oldX, oldY);
@@ -123,24 +156,49 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			ClientToScreen(hwnd, &pt);
 			SendMessage(g_hwndTrackingTT, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x + 10, pt.y - 20));
 		}
+	}
 		return FALSE;
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDC_BUTTON) {
+			if (SendMessage(g_hCheckBox, BM_GETCHECK, 0, 0) == BST_CHECKED) {
+				SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)&g_toolItem);
+				g_trackingMouse = TRUE;
+			}
+			else
+			{
+				SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)&g_toolItem);
+				g_trackingMouse = FALSE;
+			}
+		}
+		break;
 	case WM_SIZE:
 	case WM_MOVING:
 	{
+		POINT cursorPos;
+		GetCursorPos(&cursorPos);
+
 		CONST INT SIZE = 256;
 		CHAR sz_title[SIZE]{};
 		RECT rect;
 		GetWindowRect(hwnd, &rect);
-		sprintf(sz_title, "%s Position:%ix%i, Size: %ix%i", g_sz_WINDOW_CLASS,
+		sprintf(sz_title, "%s Position:%ix%i, Size: %ix%i, Mouse Position: %ix%i", g_sz_WINDOW_CLASS,
 			rect.left, rect.top,
-			rect.right - rect.left, rect.bottom - rect.top);
+			rect.right - rect.left, rect.bottom - rect.top, cursorPos.x, cursorPos.y);
 		SendMessage(hwnd, WM_SETTEXT, 0, (LPARAM)sz_title);
 	}
 	break;
-	case WM_COMMAND:
-		break;
 	case WM_DESTROY:PostQuitMessage(0); break;
-	case WM_CLOSE:	DestroyWindow(hwnd); break;
+	case WM_CLOSE: {
+		CHAR sz_message[MAX_PATH];
+		sprintf(sz_message, "Вы действительно хотите выйти?");
+		int result = MessageBox(hwnd, sz_message, "Вопрос", MB_YESNO | MB_ICONQUESTION);
+
+		if (result == IDYES) {
+			DestroyWindow(hwnd);
+			break;
+		}
+	}
+				 break;
 	default:		return DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
 	return 0;

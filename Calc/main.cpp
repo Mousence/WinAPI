@@ -1,4 +1,8 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <Windows.h>
+#include <string>
+#include <CommCtrl.h>
+#include <mmiscapi.h>
 #include "resource.h"
 
 CONST CHAR g_sz_CLASSNAME[] = "My Calc";
@@ -121,7 +125,16 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	case WM_COMMAND:
 		break;
 	case WM_DESTROY: PostQuitMessage(0); break;
-	case WM_CLOSE:   DestroyWindow(hwnd); break;
+	case WM_CLOSE: {
+		CHAR sz_message[MAX_PATH];
+		sprintf(sz_message, "Вы действительно хотите выйти?");
+		int result = MessageBox(hwnd, sz_message, "Вопрос", MB_YESNO | MB_ICONQUESTION);
+
+		if (result == IDYES) {
+			DestroyWindow(hwnd);
+		}
+	}
+				 break;
 	default:         return DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
 	return FALSE;
