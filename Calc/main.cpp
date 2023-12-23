@@ -5,14 +5,14 @@
 #include <dwmapi.h>
 //#include "pch.h"
 
-#include <winrt/Windows.UI.ViewManagement.h>
+//#include <winrt/Windows.UI.ViewManagement.h>
 
-using namespace Windows::UI::ViewManagement;
+//using namespace Windows::UI::ViewManagement;
 
-inline bool IsColorLight(Windows::UI::Color& clr)
-{
-	return (((5 * clr.G) + (2 * clr.R) + clr.B) > (8 * 128));
-}
+//inline bool IsColorLight(Windows::UI::Color& clr)
+//{
+//	return (((5 * clr.G) + (2 * clr.R) + clr.B) > (8 * 128));
+//}
 
 HFONT hFont;
 
@@ -334,7 +334,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			sz_display[0] = 0;
 			SendMessage(hEdit, WM_SETTEXT, 0, (LPARAM)sz_display);
 		}
-		if (LOWORD(wParam) == IDC_BUTTON_BRUSH) {
+		/*if (LOWORD(wParam) == IDC_BUTTON_BRUSH) {
 			init_apartment();
 
 			auto settings = UISettings();
@@ -352,7 +352,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			while (s_go)
 			{
 				Sleep(50);
-			}
+			}*/
 	}
 	break;
 	case WM_DESTROY:PostQuitMessage(0); break;
