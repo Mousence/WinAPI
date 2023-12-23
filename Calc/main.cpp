@@ -5,14 +5,14 @@
 #include <dwmapi.h>
 //#include "pch.h"
 
-#include <winrt/Windows.UI.ViewManagement.h>
+//#include <winrt/Windows.UI.ViewManagement.h>
 
-using namespace Windows::UI::ViewManagement;
+//using namespace Windows::UI::ViewManagement;
 
-inline bool IsColorLight(Windows::UI::Color& clr)
-{
-	return (((5 * clr.G) + (2 * clr.R) + clr.B) > (8 * 128));
-}
+//inline bool IsColorLight(Windows::UI::Color& clr)
+//{
+//	return (((5 * clr.G) + (2 * clr.R) + clr.B) > (8 * 128));
+//}
 
 HFONT hFont;
 
@@ -119,7 +119,9 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
-
+		/// <summary>
+		/// ///////////////////////////////////////////////////////////////////////////////
+		/// </summary>
 		LOGFONT LF = { -(g_i_BUTTON_SIZE/3), 0, 0, 0, FW_HEAVY, 0, 0, 0, RUSSIAN_CHARSET,
 		   OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DRAFT_QUALITY, 0, "Cascadia Code" };
 		hFont = CreateFontIndirect(&LF);
@@ -162,7 +164,8 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
-		HBITMAP hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_BUTTON_0), IMAGE_BITMAP, 0, 0, 0);
+		//HBITMAP hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_BUTTON_0), IMAGE_BITMAP, 0, 0, 0);
+		HBITMAP hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), "buttons\\button_0.bmp", IMAGE_BITMAP, g_i_BUTTON_DOUBLE_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
 		SendMessage(hButton0, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
 		//
 		HWND hButtonPoint = CreateWindowEx
@@ -334,25 +337,6 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			sz_display[0] = 0;
 			SendMessage(hEdit, WM_SETTEXT, 0, (LPARAM)sz_display);
 		}
-		if (LOWORD(wParam) == IDC_BUTTON_BRUSH) {
-			init_apartment();
-
-			auto settings = UISettings();
-			auto foreground = settings.GetColorValue(UIColorType::Foreground);
-
-			bool isDarkMode = static_cast<bool>(IsColorLight(foreground));
-
-			auto revoker = settings.ColorValuesChanged([settings](auto&&...)
-				{
-					auto foregroundRevoker = settings.GetColorValue(UIColorType::Foreground);
-					bool isDarkModeRevoker = static_cast<bool>(IsColorLight(foregroundRevoker));
-				});
-
-			static bool s_go = true;
-			while (s_go)
-			{
-				Sleep(50);
-			}
 	}
 	break;
 	case WM_DESTROY:PostQuitMessage(0); break;
