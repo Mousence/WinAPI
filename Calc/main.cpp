@@ -7,7 +7,7 @@ CONST CHAR g_sz_CLASSNAME[] = "MyCalc";
 CONST INT g_i_START_X = 10;
 CONST INT g_i_START_Y = 10;
 CONST INT g_i_INTERVAL = 1;
-CONST INT g_i_BUTTON_SIZE = 88;
+CONST INT g_i_BUTTON_SIZE = 66;
 CONST INT g_i_BUTTON_DOUBLE_SIZE = g_i_BUTTON_SIZE * 2 + g_i_INTERVAL;
 CONST INT g_i_DISPLAY_WIDTH = (g_i_BUTTON_SIZE + g_i_INTERVAL) * 5 - g_i_INTERVAL;
 CONST INT g_i_DISPLAY_HEIGHT = 32;
@@ -115,8 +115,8 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		/// <summary>
 		/// ///////////////////////////////////////////////////////////////////////////////
 		/// </summary>
-		LOGFONT LF = { -(g_i_BUTTON_SIZE / 3), 0, 0, 0, FW_HEAVY, 0, 0, 0, RUSSIAN_CHARSET,
-		   OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DRAFT_QUALITY, 0, "Cascadia Code" };
+		LOGFONT LF = { -(g_i_BUTTON_SIZE / 3), 0, 0, 0, FW_EXTRALIGHT, 0, 0, 0, RUSSIAN_CHARSET,
+		   OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DRAFT_QUALITY, FF_DONTCARE, "Cascadia Code" };
 		hFont = CreateFontIndirect(&LF);
 		SendDlgItemMessage(hwnd, IDC_EDIT, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 		//		Digits:
@@ -318,18 +318,18 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				   break;
 	case WM_CONTEXTMENU: 
 	{
-		HMENU hMenu = CreatePopupMenu();
+		HMENU hMainMenu = CreatePopupMenu();
 		HMENU hSubMenu = CreatePopupMenu();
-		InsertMenu(hMenu, 0, MF_BYPOSITION | MF_STRING, CM_EXIT, "Exit");
-		InsertMenu(hMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
-		InsertMenu(hMenu, 0, MF_BYPOSITION | MF_POPUP, 1, "Skin");
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_STRING, CM_EXIT, "Exit");
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
+		InsertMenu(hMainMenu, 0, MF_BYPOSITION | MF_POPUP, (UINT_PTR)hSubMenu, "Skin");
 
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_GREEN, "Square Green");
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE, "Square Blue");
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_ROUND_BLACK, "Round Black");
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_NONE_WHITE, "None White");
 
-		switch (TrackPopupMenuEx(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD, LOWORD(lParam), HIWORD(lParam), hwnd, NULL))
+		switch (TrackPopupMenuEx(hMainMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD, LOWORD(lParam), HIWORD(lParam), hwnd, NULL))
 		{
 		case 1:
 		{
@@ -354,15 +354,18 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 VOID SETSKIN(HWND hwnd, const CHAR skin[])
 {
-	HBITMAP hBitmap;
 	CHAR filename[FILENAME_MAX]{};
 	for (int i = 0; i < 10; i++) {
 		sprintf(filename, "ButtonsBMP\\%s\\%button_%i.bmp", skin, i);
 		HWND hButton = GetDlgItem(hwnd, IDC_BUTTON_0 + i);
-		if(strstr(skin, "round") != NULL)
-			 hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), filename, IMAGE_BITMAP, g_i_BUTTON_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
-		else
-		     hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), filename, IMAGE_BITMAP, i == 0? g_i_BUTTON_DOUBLE_SIZE : g_i_BUTTON_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
+		HBITMAP hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), filename, IMAGE_BITMAP, i == 0? g_i_BUTTON_DOUBLE_SIZE : g_i_BUTTON_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
 		SendMessage(hButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
 	}
+	/*filename[FILENAME_MAX];
+	for (int i = 0; i < 9; i++) {
+		sprintf(filename, "operators\\button_%i.bmp", skin, i);
+		HWND hButton = GetDlgItem(hwnd, IDC_BUTTON_POINT + i);
+		HBITMAP hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), filename, IMAGE_BITMAP, g_i_BUTTON_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
+		SendMessage(hButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
+	}*/
 }
