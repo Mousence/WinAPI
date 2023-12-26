@@ -284,21 +284,54 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			SendMessage(hEdit, WM_SETTEXT, 0, (LPARAM)sz_display);
 		}
 	}
+	break;
+	case WM_KEYDOWN: {
+		if (GetKeyState(VK_SHIFT) < 0) {
+			if (wParam == 0x38)SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_ASTER, 0);
+		}
+		else if (LOWORD(wParam) >= 0x30 && LOWORD(wParam) <= 0x39)
+			SendMessage(hwnd, WM_COMMAND, LOWORD(wParam) - 0x30 + IDC_BUTTON_0, 0);
+		if (LOWORD(wParam) >= VK_NUMPAD0 && LOWORD(wParam) <= VK_NUMPAD9)
+			SendMessage(hwnd, WM_COMMAND, LOWORD(wParam) - 0x60 + IDC_BUTTON_0, 0);
+		switch (LOWORD(wParam)) {
+		case VK_OEM_PLUS: SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_PLUS, 0); break;
+		case VK_OEM_MINUS: SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_MINUS, 0); break;
+		case VK_MULTIPLY: SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_ASTER, 0); break;
+		case VK_OEM_2:
+		case VK_DIVIDE:
+			SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_SLASH, 0); break;
+		case VK_OEM_PERIOD: SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_POINT, 0); break;
+		case VK_RETURN: SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_EQUAL, 0); break;
+		case VK_ESCAPE: SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_CLEAR, 0); break;
+		case VK_BACK: SendMessage(hwnd, WM_COMMAND, IDC_BUTTON_BSP, 0); break;
+		}
+	}
+				   break;
 	case WM_CONTEXTMENU: 
 	{
 		HMENU hMenu = CreatePopupMenu();
+		HMENU hSubMenu = CreatePopupMenu();
 		InsertMenu(hMenu, 0, MF_BYPOSITION | MF_STRING, CM_EXIT, "Exit");
 		InsertMenu(hMenu, 0, MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
-		InsertMenu(hMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_GREEN, "Square Green");
-		InsertMenu(hMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE, "Square Blue");
+		InsertMenu(hMenu, 0, MF_BYPOSITION | MF_POPUP, 1, "Skin");
+
+		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_GREEN, "Square Green");
+		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE, "Square Blue");
+		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_NONE_WHITE, "None White");
 
 		switch (TrackPopupMenuEx(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD, LOWORD(lParam), HIWORD(lParam), hwnd, NULL))
 		{
-		case CM_SQUARE_BLUE:  strcpy(sz_skin, "square_blue");  break;
-		case CM_SQUARE_GREEN: strcpy(sz_skin, "square_green"); break;
+		case 1:
+		{
+			switch (TrackPopupMenuEx(hSubMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD, LOWORD(lParam), HIWORD(lParam), hwnd, NULL)) {
+			case CM_NONE_WHITE: { strcpy(sz_skin, "none_white"); SETSKIN(hwnd, sz_skin); }break;
+			case CM_SQUARE_BLUE: { strcpy(sz_skin, "square_blue"); SETSKIN(hwnd, sz_skin); }break;
+			case CM_SQUARE_GREEN: { strcpy(sz_skin, "square_green"); SETSKIN(hwnd, sz_skin); }break;
+			}
+		}
+					   break;
 		case CM_EXIT: PostQuitMessage(0); break;
 		}
-		SETSKIN(hwnd, sz_skin);
 	}
 	break;
 	case WM_DESTROY:PostQuitMessage(0); break;

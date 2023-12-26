@@ -8,6 +8,7 @@
 #define CM_SQUARE_GREEN     202
 #define CM_ROUND_BLUE       203
 #define CM_ROUND_GREEN      204
+#define CM_NONE_WHITE       205
 
 #define IDC_EDIT			 999
 #define IDC_BUTTON_0		1000
