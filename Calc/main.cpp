@@ -93,7 +93,9 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	static BOOL		operation_input = FALSE;
 	static BOOL		in_default_state = TRUE;
 
-	static CHAR     sz_skin[FILENAME_MAX] = "Square Blue";
+	static HFONT hFont;
+
+	static CHAR     sz_skin[FILENAME_MAX] = "None White";
 
 	switch (uMsg)
 	{
@@ -110,6 +112,13 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
+		/// <summary>
+		/// ///////////////////////////////////////////////////////////////////////////////
+		/// </summary>
+		LOGFONT LF = { -(g_i_BUTTON_SIZE / 3), 0, 0, 0, FW_HEAVY, 0, 0, 0, RUSSIAN_CHARSET,
+		   OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DRAFT_QUALITY, 0, "Cascadia Code" };
+		hFont = CreateFontIndirect(&LF);
+		SendDlgItemMessage(hwnd, IDC_EDIT, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 		//		Digits:
 		for (int i = 6; i >= 0; i -= 3)
 		{
@@ -215,7 +224,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
-		SETSKIN(hwnd, "square_blue");
+		SETSKIN(hwnd, "none_white");
 
 
 		RECT window_rect, client_rect;
@@ -317,6 +326,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_GREEN, "Square Green");
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_SQUARE_BLUE, "Square Blue");
+		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_ROUND_BLACK, "Round Black");
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_NONE_WHITE, "None White");
 
 		switch (TrackPopupMenuEx(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD, LOWORD(lParam), HIWORD(lParam), hwnd, NULL))
@@ -327,6 +337,7 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			case CM_NONE_WHITE: { strcpy(sz_skin, "none_white"); SETSKIN(hwnd, sz_skin); }break;
 			case CM_SQUARE_BLUE: { strcpy(sz_skin, "square_blue"); SETSKIN(hwnd, sz_skin); }break;
 			case CM_SQUARE_GREEN: { strcpy(sz_skin, "square_green"); SETSKIN(hwnd, sz_skin); }break;
+			case CM_ROUND_BLACK: {strcpy(sz_skin, "round_black"); SETSKIN(hwnd, sz_skin); }break;
 			}
 		}
 					   break;
@@ -343,11 +354,15 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 VOID SETSKIN(HWND hwnd, const CHAR skin[])
 {
+	HBITMAP hBitmap;
 	CHAR filename[FILENAME_MAX]{};
 	for (int i = 0; i < 10; i++) {
 		sprintf(filename, "ButtonsBMP\\%s\\%button_%i.bmp", skin, i);
 		HWND hButton = GetDlgItem(hwnd, IDC_BUTTON_0 + i);
-		HBITMAP hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), filename, IMAGE_BITMAP, i == 0? g_i_BUTTON_DOUBLE_SIZE : g_i_BUTTON_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
+		if(strstr(skin, "round") != NULL)
+			 hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), filename, IMAGE_BITMAP, g_i_BUTTON_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
+		else
+		     hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), filename, IMAGE_BITMAP, i == 0? g_i_BUTTON_DOUBLE_SIZE : g_i_BUTTON_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
 		SendMessage(hButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
 	}
 }
