@@ -18,6 +18,11 @@ CONST INT g_i_WINDOW_HEIGHT = g_i_DISPLAY_HEIGHT + g_i_START_Y * 2 + (g_i_BUTTON
 
 CONST CHAR* g_sz_arr_OPERATIONS[] = { "+", "-", "*", "/" };
 
+CONST COLORREF g_clr_COLORS[][3] =
+{
+	{RGB(0,0,100), RGB(0,0,255), RGB(255,0,0)},
+	{RGB(0,100,0), RGB(0,255,0), RGB(0,255,0)},
+};
 
 INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -36,7 +41,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, IN
 	wc.hIcon = (HICON)LoadImage(hInstance, "calc.ico", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_LOADFROMFILE);
 	wc.hIconSm = (HICON)LoadImage(hInstance, "calc.ico", IMAGE_ICON, LR_DEFAULTSIZE, LR_DEFAULTSIZE, LR_LOADFROMFILE);
 	wc.hCursor = LoadCursor(hInstance, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+	wc.hbrBackground = CreateSolidBrush(RGB(0,0,0));
 
 	wc.hInstance = hInstance;
 	wc.lpszMenuName = NULL;
@@ -95,6 +100,11 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	static HFONT hFont;
 
+	static UINT colorref;
+	static COLORREF clrDisplayBackgroung = RGB(0, 0, 100);
+	static COLORREF clrWindowBackgroung = RGB(0, 0, 255);
+	static COLORREF clrDisplayFont = RGB(255, 0, 0);
+
 	static CHAR     sz_skin[FILENAME_MAX] = "None White";
 
 	switch (uMsg)
@@ -112,13 +122,30 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
-		/// <summary>
+
 		/// ///////////////////////////////////////////////////////////////////////////////
-		/// </summary>
-		LOGFONT LF = { -(g_i_BUTTON_SIZE / 3), 0, 0, 0, FW_EXTRALIGHT, 0, 0, 0, RUSSIAN_CHARSET,
-		   OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DRAFT_QUALITY, FF_DONTCARE, "Cascadia Code" };
+		AddFontResourceEx("Fonts\\SfDigitalReadoutHeavy.ttf", FR_PRIVATE, 0);
+		HFONT hFont = CreateFont
+		(
+			g_i_DISPLAY_HEIGHT-2,g_i_DISPLAY_HEIGHT/3, 
+			0,
+			0,
+			FW_BOLD,
+			FALSE, FALSE, FALSE,
+			DEFAULT_CHARSET,
+			OUT_TT_PRECIS,
+			CLIP_DEFAULT_PRECIS,
+			ANTIALIASED_QUALITY,
+			FF_DONTCARE,
+			"SfDigitalReadoutHeavy"
+		);
+		SendMessage(hEdit, WM_SETFONT, (WPARAM)hFont, TRUE);
+		/*LOGFONT LF = { -(g_i_BUTTON_SIZE / 3), 0, 0, 0, FW_EXTRALIGHT, 0, 0, 0, RUSSIAN_CHARSET,
+		   OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, DRAFT_QUALITY, FF_DONTCARE, "SfDigitalReadoutHeavy" };
 		hFont = CreateFontIndirect(&LF);
-		SendDlgItemMessage(hwnd, IDC_EDIT, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+		SendDlgItemMessage(hwnd, IDC_EDIT, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));*/
+
+		///////////////////////////////////////////////////////////////////////////////////
 		//		Digits:
 		for (int i = 6; i >= 0; i -= 3)
 		{
@@ -235,6 +262,21 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		cout << "Client rect:\t" << client_rect.left << client_rect.top << client_rect.right << client_rect.bottom << endl;
 	}
 	break;
+	case WM_CTLCOLOREDIT: 
+	{
+		HDC hdc = (HDC)wParam;
+		SetBkMode(hdc, OPAQUE);
+		//SetBkColor(hdc, clrDisplayBackgroung);
+		//HBRUSH hBrush = CreateSolidBrush(clrWindowBackgroung);
+		//SetTextColor(hdc, clrDisplayFont);
+		SetBkColor(hdc, g_clr_COLORS[colorref][0]);
+		HBRUSH hBrush = CreateSolidBrush(g_clr_COLORS[colorref][1]);
+		SetTextColor(hdc, g_clr_COLORS[colorref][2]);
+		SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hBrush);
+		SendMessage(hwnd, WM_ERASEBKGND, wParam, 0);
+		return (LRESULT)hBrush;
+	}
+	break;
 	case WM_COMMAND:
 	{
 		HWND hEdit = GetDlgItem(hwnd, IDC_EDIT);
@@ -329,20 +371,18 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_ROUND_BLACK, "Round Black");
 		InsertMenu(hSubMenu, 0, MF_BYPOSITION | MF_STRING, CM_NONE_WHITE, "None White");
 
-		switch (TrackPopupMenuEx(hMainMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD, LOWORD(lParam), HIWORD(lParam), hwnd, NULL))
+		BOOL item = TrackPopupMenuEx(hMainMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD, LOWORD(lParam), HIWORD(lParam), hwnd, NULL);
+		switch (item)
 		{
-		case 1:
-		{
-			switch (TrackPopupMenuEx(hSubMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | TPM_RETURNCMD, LOWORD(lParam), HIWORD(lParam), hwnd, NULL)) {
-			case CM_NONE_WHITE: { strcpy(sz_skin, "none_white"); SETSKIN(hwnd, sz_skin); }break;
-			case CM_SQUARE_BLUE: { strcpy(sz_skin, "square_blue"); SETSKIN(hwnd, sz_skin); }break;
-			case CM_SQUARE_GREEN: { strcpy(sz_skin, "square_green"); SETSKIN(hwnd, sz_skin); }break;
-			case CM_ROUND_BLACK: {strcpy(sz_skin, "round_black"); SETSKIN(hwnd, sz_skin); }break;
-			}
-		}
-					   break;
+		case CM_NONE_WHITE: { strcpy(sz_skin, "none_white"); SETSKIN(hwnd, sz_skin); }break;
+		case CM_SQUARE_BLUE: { strcpy(sz_skin, "square_blue"); SETSKIN(hwnd, sz_skin); }break;
+		case CM_SQUARE_GREEN: { strcpy(sz_skin, "square_green"); SETSKIN(hwnd, sz_skin); }break;
+		case CM_ROUND_BLACK: {strcpy(sz_skin, "round_black"); SETSKIN(hwnd, sz_skin); }break;
 		case CM_EXIT: PostQuitMessage(0); break;
 		}
+		HDC hdc = GetDC(hwnd);
+		SendMessage(hwnd, WM_CTLCOLOREDIT, (WPARAM)hdc, 0);
+		ReleaseDC(hwnd, hdc);
 	}
 	break;
 	case WM_DESTROY:PostQuitMessage(0); break;
@@ -361,6 +401,7 @@ VOID SETSKIN(HWND hwnd, const CHAR skin[])
 		HBITMAP hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), filename, IMAGE_BITMAP, i == 0? g_i_BUTTON_DOUBLE_SIZE : g_i_BUTTON_SIZE, g_i_BUTTON_SIZE, LR_LOADFROMFILE);
 		SendMessage(hButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
 	}
+
 	/*filename[FILENAME_MAX];
 	for (int i = 0; i < 9; i++) {
 		sprintf(filename, "operators\\button_%i.bmp", skin, i);
