@@ -111,6 +111,18 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
+		//
+		HWND hRoundButton = CreateWindowEx
+		(
+			NULL, "Button", "Round Button",
+			WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
+			100,100,100,100,
+			hwnd,
+			(HMENU)IDC_ROUND_BUTTON,
+			GetModuleHandle(NULL),
+			NULL
+		);
+		//
 		INT parts[2] = { 64, -1 };
 		HWND hStatus = CreateWindowEx(
 			NULL,
@@ -125,6 +137,24 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		);
 	}
 		return TRUE;
+	case WM_DRAWITEM:
+	{
+		HWND hRoundButton = GetDlgItem(hwnd, wParam);
+		HBITMAP hBitMap = (HBITMAP)LoadImage(GetModuleHandle(NULL), "buttons\\button_1.bmp", IMAGE_BITMAP, 100, 100, LR_LOADFROMFILE);
+		//SendMessage(hRoundButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitMap);
+		DRAWITEMSTRUCT* distr = (DRAWITEMSTRUCT*)lParam;
+
+		HDC hDCbmp = CreateCompatibleDC(distr->hDC);
+		SelectObject(hDCbmp, hBitMap);
+		HRGN hRgn = CreateEllipticRgn(0, 0, 100, 100);
+		SetWindowRgn(hRoundButton, hRgn, TRUE);
+		BitBlt(distr->hDC, 0, 0, 100, 100, hDCbmp, 0, 0, SRCAND);
+
+		DeleteObject(hRgn);
+		DeleteDC(hDCbmp);
+		DeleteObject(hBitMap);
+	}
+	return TRUE;
 	case WM_MOUSELEAVE:
 		SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)&g_toolItem);
 		g_trackingMouse = FALSE;
@@ -185,6 +215,26 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	break;
 	case WM_COMMAND: {
 		switch (LOWORD(wParam)) {
+		case IDC_ROUND_BUTTON: 
+		{
+			if (HIWORD(wParam)) {
+				HBITMAP hBitMap = (HBITMAP)LoadImage(GetModuleHandle(NULL), "buttons\\button_1.bmp", IMAGE_BITMAP, 100, 100, LR_LOADFROMFILE);
+				HWND hRoundButton = GetDlgItem(hwnd, wParam);
+				HDC hdcButton = GetDC(hRoundButton);
+				//SendMessage(hRoundButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitMap);
+				DRAWITEMSTRUCT* distr = (DRAWITEMSTRUCT*)lParam;
+				HDC hDCbmp = CreateCompatibleDC(distr->hDC);
+				SelectObject(hDCbmp, hBitMap);
+				BitBlt(distr->hDC, 0, 0, 100, 100, hDCbmp, 0, 0, SRCAND);
+				HRGN hRgn = CreateEllipticRgn(0, 0, 100, 100);
+
+				SetWindowRgn(hRoundButton, hRgn, TRUE);
+				DeleteObject(hRgn);
+				DeleteDC(hDCbmp);
+				DeleteObject(hBitMap);
+			}
+		}
+		break;
 		case IDC_CHECKBOX_MOUSE_COORDS:
 			if (SendMessage(GetDlgItem(hwnd, IDC_CHECKBOX_MOUSE_COORDS), BM_GETCHECK, 0, 0) == BST_CHECKED)
 				bShowCoords = TRUE;
