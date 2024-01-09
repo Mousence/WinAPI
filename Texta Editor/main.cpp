@@ -67,6 +67,9 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, IN
 
 INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	static TCHAR name[256] = ("");
+	static OPENFILENAME file;
+
 	switch (uMsg)
 	{
 	case WM_CREATE:
@@ -87,14 +90,19 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
-	}
-	break;
+		file.lStructSize = sizeof(OPENFILENAME);
+		file.hInstance = GetModuleHandle(NULL);
+		file.lpstrFilter = "Text\0*.txt";
+		file.lpstrFile = name;
+		file.nMaxFile = 256;
+		file.lpstrInitialDir = ".\\";
+		file.lpstrDefExt = "txt";
+	} break;
 	case WM_SIZE: {
 		RECT rect;
 		GetClientRect(hwnd, &rect);
 		SetWindowPos(GetDlgItem(hwnd, IDC_EDIT), NULL, rect.left, rect.top, rect.right, rect.bottom, SWP_NOZORDER);
-	}
-				break;
+	} break;
 	case WM_COMMAND:
 	{
 		switch (LOWORD(wParam)) {
