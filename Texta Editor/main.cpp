@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <iostream>
 #include <windows.h>
 #include <Richedit.h> 
 #include "resource.h"
@@ -7,6 +9,7 @@ CONST CHAR g_sz_CLASS_NAME[] = "My text editor";
 INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 INT CALLBACK DlgProcAbout(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+CHAR* DropFile(HDROP hDrop);
 BOOL LoadTextFileToEdit(HWND hEdit, LPSTR lpszFileName);
 BOOL SaveTextFileFromEdit(HWND hEdit, LPCTSTR lpszFileName);
 
@@ -55,6 +58,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, IN
 	}
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
+	DragAcceptFiles(hwnd, TRUE);
 	//3
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0) > 0)
@@ -68,7 +72,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, IN
 INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static CHAR szFileName[MAX_PATH]{};
-
+	static CHAR* szFileText = NULL;
+	static BOOL onSave = TRUE;
 	switch (uMsg)
 	{
 	case WM_CREATE:
@@ -89,11 +94,27 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			GetModuleHandle(NULL),
 			NULL
 		);
+		SetFocus(hEdit);
 	} break;
 	case WM_SIZE: {
 		RECT rect;
 		GetClientRect(hwnd, &rect);
 		SetWindowPos(GetDlgItem(hwnd, IDC_EDIT), NULL, rect.left, rect.top, rect.right, rect.bottom, SWP_NOZORDER);
+	} break;
+	case WM_DROPFILES: {
+		CHAR* szFileName = DropFile((HDROP)wParam);
+		if (SendMessage(GetDlgItem(hwnd, IDC_EDIT), EM_GETMODIFY, 0, 0)) {
+			switch (MessageBox(hwnd, "Сохранить изменения в файле?", "info", MB_YESNOCANCEL | MB_ICONQUESTION)) {
+			case IDYES: SendMessage(hwnd, WM_COMMAND, ID_FILE_SAVE, 0); break;
+			case IDNO:  SendMessage(GetDlgItem(hwnd, IDC_EDIT), EM_SETMODIFY, FALSE, 0);
+			case IDCANCEL:
+				break;
+			}
+		}
+		if (!(SendMessage(GetDlgItem(hwnd, IDC_EDIT), EM_GETMODIFY, 0, 0))) {
+				HWND hEdit = GetDlgItem(hwnd, IDC_EDIT);
+				onSave = LoadTextFileToEdit(hEdit, szFileName);
+		}
 	} break;
 	case WM_COMMAND:
 	{
@@ -102,27 +123,36 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case ID_FILE_OPEN:
 		{
 			//CHAR szFileName[MAX_PATH]{};
+			if (SendMessage(GetDlgItem(hwnd, IDC_EDIT), EM_GETMODIFY, 0, 0)) {
+				switch (MessageBox(hwnd, "Сохранить изменения в файле?", "info", MB_YESNOCANCEL | MB_ICONQUESTION)) {
+				case IDYES: SendMessage(hwnd, WM_COMMAND, ID_FILE_SAVE, 0); break;
+				case IDNO:  SendMessage(GetDlgItem(hwnd, IDC_EDIT), EM_SETMODIFY, FALSE, 0);
+				case IDCANCEL:
+					break;
+				}
+			}
+			if (!(SendMessage(GetDlgItem(hwnd, IDC_EDIT), EM_GETMODIFY, 0, 0))) {
+				OPENFILENAME ofn;
+				ZeroMemory(&ofn, sizeof(ofn));
 
-			OPENFILENAME ofn;
-			ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = hwnd;
+				ofn.lpstrFilter = "Text files: (*.txt)\0*.txt\0All files (*.*)\0*.*\0";
+				ofn.lpstrFile = szFileName;
+				ofn.nMaxFile = MAX_PATH;
+				ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+				ofn.lpstrDefExt = "txt";
 
-			ofn.lStructSize = sizeof(ofn);
-			ofn.hwndOwner = hwnd;
-			ofn.lpstrFilter = "Text files: (*.txt)\0*.txt\0All files (*.*)\0*.*\0";
-			ofn.lpstrFile = szFileName;
-			ofn.nMaxFile = MAX_PATH;
-			ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-			ofn.lpstrDefExt = "txt";
-
-			if (GetOpenFileName(&ofn))
-			{
-				HWND hEdit = GetDlgItem(hwnd, IDC_EDIT);
-				LoadTextFileToEdit(hEdit, szFileName);
+				if (GetOpenFileName(&ofn))
+				{
+					HWND hEdit = GetDlgItem(hwnd, IDC_EDIT);
+					onSave = LoadTextFileToEdit(hEdit, szFileName);
+				}
 			}
 		}
 		break;
 		case ID_FILE_SAVE:
-			if (strlen(szFileName))SaveTextFileFromEdit(GetDlgItem(hwnd, IDC_EDIT), szFileName);
+			if (strlen(szFileName)) onSave = SaveTextFileFromEdit(GetDlgItem(hwnd, IDC_EDIT), szFileName);
 			else SendMessage(hwnd, WM_COMMAND, ID_FILE_SAVEAS, 0);
 			break;
 		case ID_FILE_SAVEAS:
@@ -150,9 +180,11 @@ INT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CLOSE: {
 		HWND hEdit = GetDlgItem(hwnd, IDC_EDIT);
 		if (SendMessage(GetDlgItem(hwnd, IDC_EDIT), EM_GETMODIFY, 0, 0)) {
+			onSave = FALSE;
 			switch (MessageBox(hwnd, "Сохранить изменения в файле?", "info", MB_YESNOCANCEL | MB_ICONQUESTION)) {
 			case IDYES:
 				SendMessage(hwnd, WM_COMMAND, ID_FILE_SAVE, 0);
+				if (onSave) DestroyWindow(hwnd); break;
 			case IDNO: DefWindowProc(hwnd, uMsg, wParam, lParam);
 			case IDCANCEL:
 				break;
@@ -175,6 +207,21 @@ INT CALLBACK DlgProcAbout(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	}
 	return FALSE;
 }
+CHAR* DropFile(HDROP hDrop) {
+	CHAR szFileName[MAX_PATH]{};
+
+	UINT numFiles = DragQueryFile(hDrop, 0xFFFFFFFF, nullptr, 0);
+	if (numFiles > 0) DragQueryFile(hDrop, 0, szFileName, MAX_PATH);
+	
+
+	DragFinish(hDrop);
+
+	CHAR* result = new CHAR[strlen(szFileName) + 1];
+	strcpy(result, szFileName);
+
+	return result;
+}
+
 BOOL LoadTextFileToEdit(HWND hEdit, LPSTR lpszFileName)
 {
 	BOOL bSuccess = FALSE;
